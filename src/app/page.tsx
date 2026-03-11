@@ -4,7 +4,7 @@ import React, { useState, useCallback } from 'react';
 import {
   FileText, BarChart3, Calculator, RefreshCw,
   ChevronLeft, ChevronRight, CheckCircle2, AlertCircle, ArrowLeft,
-  Home as HomeIcon, ClipboardList
+  Home as HomeIcon, ClipboardList, ChevronUp, ChevronDown
 } from 'lucide-react';
 import SANSGraph from '@/components/SANSGraph';
 import {
@@ -20,6 +20,7 @@ type FluidGroup = 'Dangerous' | 'Non-Dangerous' | null;
 export default function Home() {
   // Navigation - direct page switching (no carousel)
   const [currentPage, setCurrentPage] = useState(1); // 0=Tables, 1=Home, 2=Graphs, 3=Results
+  const [showHeader, setShowHeader] = useState(true);
 
   // Input state
   const [equipmentType, setEquipmentType] = useState<EquipmentType>(null);
@@ -128,27 +129,38 @@ export default function Home() {
 
   return (
     <div className="h-screen w-screen overflow-hidden bg-gray-100 flex flex-col">
-      {/* Header */}
-      <header className="flex-shrink-0 flex items-center justify-between px-4 py-2" style={{ backgroundColor: '#0F0F0F' }}>
+      {/* Header - toggleable */}
+      <header className="flex-shrink-0 transition-all duration-300 overflow-hidden" style={{ backgroundColor: '#0F0F0F' }}>
+        {showHeader ? (
+          <div className="flex items-center justify-between px-4 py-2">
+            <button
+              onClick={() => setCurrentPage(0)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm transition-colors hover:bg-gray-700"
+              style={{ color: '#d1d5db' }}
+            >
+              <FileText size={16} />
+              Tables
+            </button>
+            <button onClick={() => setCurrentPage(1)} className="text-center cursor-pointer">
+              <div className="text-white font-bold text-lg">SANS 347</div>
+              <div className="text-xs font-medium" style={{ color: '#00C2FF' }}>2024 3rd Edition</div>
+            </button>
+            <button
+              onClick={() => setCurrentPage(2)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm transition-colors hover:bg-gray-700"
+              style={{ color: '#d1d5db' }}
+            >
+              Graphs
+              <BarChart3 size={16} />
+            </button>
+          </div>
+        ) : null}
         <button
-          onClick={() => setCurrentPage(0)}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm transition-colors hover:bg-gray-700"
-          style={{ color: '#d1d5db' }}
+          onClick={() => setShowHeader(!showHeader)}
+          className="w-full flex items-center justify-center py-0.5 hover:bg-gray-800 transition-colors"
+          style={{ color: '#6b7280' }}
         >
-          <FileText size={16} />
-          Tables
-        </button>
-        <button onClick={() => setCurrentPage(1)} className="text-center cursor-pointer">
-          <div className="text-white font-bold text-lg">SANS 347</div>
-          <div className="text-xs font-medium" style={{ color: '#00C2FF' }}>2024 3rd Edition</div>
-        </button>
-        <button
-          onClick={() => setCurrentPage(2)}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm transition-colors hover:bg-gray-700"
-          style={{ color: '#d1d5db' }}
-        >
-          Graphs
-          <BarChart3 size={16} />
+          {showHeader ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
         </button>
       </header>
 
@@ -580,17 +592,35 @@ function GraphsPage({ currentIndex, setCurrentIndex }: {
 
   return (
     <div className="max-w-4xl mx-auto p-4 pb-24 space-y-4">
-      {/* Graph Header */}
+      {/* Graph Header with navigation */}
       <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
         <div className="flex justify-between items-start">
           <div>
             <h2 className="font-bold text-lg text-black">{graph.title}</h2>
             <p style={{ color: '#00C2FF' }} className="font-medium">{graph.subtitle}</p>
-            <p className="text-gray-500 text-sm">Figure {graph.id}</p>
           </div>
-          <span className="text-gray-400 text-sm bg-gray-200 px-2 py-1 rounded-full">
+          <span className="text-gray-400 text-sm bg-gray-200 px-2 py-1 rounded-full flex-shrink-0">
             {currentIndex + 1} of 9
           </span>
+        </div>
+        <div className="flex items-center justify-between mt-2">
+          <p className="text-gray-500 text-sm">Figure {graph.id}</p>
+          <div className="flex items-center gap-1.5">
+            <button
+              onClick={() => setCurrentIndex(Math.max(0, currentIndex - 1))}
+              disabled={currentIndex === 0}
+              className="flex items-center gap-0.5 px-2 py-1 rounded-md border border-gray-300 bg-white text-gray-600 hover:bg-gray-100 disabled:opacity-30 transition-colors text-xs"
+            >
+              <ChevronLeft size={12} /> Prev
+            </button>
+            <button
+              onClick={() => setCurrentIndex(Math.min(8, currentIndex + 1))}
+              disabled={currentIndex === 8}
+              className="flex items-center gap-0.5 px-2 py-1 rounded-md border border-gray-300 bg-white text-gray-600 hover:bg-gray-100 disabled:opacity-30 transition-colors text-xs"
+            >
+              Next <ChevronRight size={12} />
+            </button>
+          </div>
         </div>
       </div>
 
@@ -611,26 +641,6 @@ function GraphsPage({ currentIndex, setCurrentIndex }: {
         {graph.footerText}
       </div>
 
-      {/* Navigation Controls */}
-      <div className="flex items-center justify-center gap-3">
-        <button
-          onClick={() => setCurrentIndex(Math.max(0, currentIndex - 1))}
-          disabled={currentIndex === 0}
-          className="flex items-center gap-1 px-4 py-2 rounded-lg border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-40 transition-colors"
-        >
-          <ChevronLeft size={16} /> Previous
-        </button>
-        <span className="text-gray-400 text-sm bg-gray-100 px-3 py-1 rounded-full">
-          Graph {currentIndex + 1} of 9
-        </span>
-        <button
-          onClick={() => setCurrentIndex(Math.min(8, currentIndex + 1))}
-          disabled={currentIndex === 8}
-          className="flex items-center gap-1 px-4 py-2 rounded-lg border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-40 transition-colors"
-        >
-          Next <ChevronRight size={16} />
-        </button>
-      </div>
 
       {/* Thumbnail Grid - responsive for mobile */}
       <div className="grid grid-cols-5 sm:grid-cols-9 gap-2">
@@ -773,27 +783,27 @@ function ResultsPage({ result, onBack }: {
               />
             </div>
 
-            {/* Toggleable floating result card */}
+            {/* Toggleable floating result card — compact */}
             <button
               onClick={() => setShowResultCard(!showResultCard)}
-              className="absolute top-2 right-2 bg-white rounded-xl shadow-lg border-2 transition-all cursor-pointer select-none"
+              className="absolute top-1 right-1 bg-white rounded-lg shadow-md border transition-all cursor-pointer select-none"
               style={{
                 borderColor: '#00C2FF',
-                padding: showResultCard ? '0.75rem' : '0.5rem',
-                maxWidth: showResultCard ? '200px' : 'auto',
+                padding: showResultCard ? '0.375rem 0.5rem' : '0.25rem 0.375rem',
+                maxWidth: showResultCard ? '120px' : 'auto',
               }}
             >
               {showResultCard ? (
                 <>
-                  <div className="flex items-center gap-2 mb-2">
-                    <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: catColor }} />
-                    <span className="font-bold text-sm text-black">Your Result</span>
+                  <div className="flex items-center gap-1 mb-1">
+                    <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: catColor }} />
+                    <span className="font-bold text-black" style={{ fontSize: '0.55rem' }}>Your Result</span>
                   </div>
-                  <p className="text-xs text-gray-600 mb-2 text-left">{productLabel}</p>
+                  <p className="text-gray-600 mb-1 text-left" style={{ fontSize: '0.5rem', lineHeight: 1.3 }}>{productLabel}</p>
                   <div className="flex items-center justify-center">
-                    <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ backgroundColor: catColor }}>
+                    <div className="w-5 h-5 rounded-full flex items-center justify-center" style={{ backgroundColor: catColor }}>
                       <span className="text-white font-bold" style={{
-                        fontSize: result.category.length <= 3 ? '0.875rem' : '0.55rem',
+                        fontSize: result.category.length <= 3 ? '0.4rem' : '0.3rem',
                         lineHeight: 1.2,
                         textAlign: 'center',
                       }}>
@@ -801,20 +811,20 @@ function ResultsPage({ result, onBack }: {
                       </span>
                     </div>
                   </div>
-                  <p className="text-center text-xs text-gray-500 mt-1">
-                    {result.category === 'Not regulated' ? 'Not Regulated' : `Category ${result.category}`}
+                  <p className="text-center text-gray-500 mt-0.5" style={{ fontSize: '0.45rem' }}>
+                    {result.category === 'Not regulated' ? 'Not Regulated' : `Cat ${result.category}`}
                   </p>
                 </>
               ) : (
-                <div className="flex items-center gap-1.5">
-                  <div className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0" style={{ backgroundColor: catColor }}>
+                <div className="flex items-center gap-1">
+                  <div className="w-3.5 h-3.5 rounded-full flex items-center justify-center flex-shrink-0" style={{ backgroundColor: catColor }}>
                     <span className="text-white font-bold" style={{
-                      fontSize: result.category.length <= 3 ? '0.6rem' : '0.4rem',
+                      fontSize: result.category.length <= 3 ? '0.35rem' : '0.25rem',
                     }}>
                       {result.category}
                     </span>
                   </div>
-                  <span className="text-[10px] font-bold text-gray-600">Result</span>
+                  <span className="font-bold text-gray-600" style={{ fontSize: '0.45rem' }}>Result</span>
                 </div>
               )}
             </button>
