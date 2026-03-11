@@ -1,9 +1,10 @@
 'use client';
 
-import React, { useState, useRef, useCallback, useEffect } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   FileText, BarChart3, Calculator, RefreshCw,
-  ChevronLeft, ChevronRight, CheckCircle2, AlertCircle, ArrowLeft
+  ChevronLeft, ChevronRight, CheckCircle2, AlertCircle, ArrowLeft,
+  Home as HomeIcon, ClipboardList
 } from 'lucide-react';
 import SANSGraph from '@/components/SANSGraph';
 import {
@@ -17,10 +18,8 @@ type StateOfContents = 'Gas' | 'Liquid' | null;
 type FluidGroup = 'Dangerous' | 'Non-Dangerous' | null;
 
 export default function Home() {
-  // Navigation
+  // Navigation - direct page switching (no carousel)
   const [currentPage, setCurrentPage] = useState(1); // 0=Tables, 1=Home, 2=Graphs, 3=Results
-  const touchStartX = useRef(0);
-  const touchEndX = useRef(0);
 
   // Input state
   const [equipmentType, setEquipmentType] = useState<EquipmentType>(null);
@@ -44,38 +43,6 @@ export default function Home() {
   const isFormValid = equipmentType && stateOfContents && fluidGroup &&
     designPressure && volumeOrDiameter &&
     parseFloat(designPressure) > 0 && parseFloat(volumeOrDiameter) > 0;
-
-  // Swipe handling
-  const handleTouchStart = (e: React.TouchEvent) => {
-    touchStartX.current = e.targetTouches[0].clientX;
-  };
-  const handleTouchMove = (e: React.TouchEvent) => {
-    touchEndX.current = e.targetTouches[0].clientX;
-  };
-  const handleTouchEnd = () => {
-    const diff = touchStartX.current - touchEndX.current;
-    if (Math.abs(diff) > 50) {
-      if (diff > 0 && currentPage < 2) setCurrentPage(p => p + 1);
-      if (diff < 0 && currentPage > 0) setCurrentPage(p => p - 1);
-    }
-  };
-
-  // Mouse swipe
-  const mouseStartX = useRef(0);
-  const isDragging = useRef(false);
-  const handleMouseDown = (e: React.MouseEvent) => {
-    mouseStartX.current = e.clientX;
-    isDragging.current = true;
-  };
-  const handleMouseUp = (e: React.MouseEvent) => {
-    if (!isDragging.current) return;
-    isDragging.current = false;
-    const diff = mouseStartX.current - e.clientX;
-    if (Math.abs(diff) > 50) {
-      if (diff > 0 && currentPage < 2) setCurrentPage(p => p + 1);
-      if (diff < 0 && currentPage > 0) setCurrentPage(p => p - 1);
-    }
-  };
 
   const handleCalculate = useCallback(() => {
     if (!equipmentType || !stateOfContents || !fluidGroup) return;
@@ -106,16 +73,58 @@ export default function Home() {
   const volumePlaceholder = isPiping ? 'Enter diameter' : 'Enter volume';
   const volumeDesc = isPiping ? 'Nominal pipe diameter' : 'Internal volume capacity';
 
-  // Keyboard nav
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (currentPage === 3) return;
-      if (e.key === 'ArrowLeft' && currentPage > 0) setCurrentPage(p => p - 1);
-      if (e.key === 'ArrowRight' && currentPage < 2) setCurrentPage(p => p + 1);
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [currentPage]);
+  // Render the active page directly (no carousel/swipe)
+  const renderPage = () => {
+    switch (currentPage) {
+      case 0:
+        return (
+          <div className="h-full overflow-y-auto custom-scrollbar" style={{ backgroundColor: '#111827' }}>
+            <TablesPage />
+          </div>
+        );
+      case 1:
+        return (
+          <div className="h-full overflow-y-auto hide-scrollbar bg-gray-100">
+            <InputPage
+              equipmentType={equipmentType}
+              setEquipmentType={setEquipmentType}
+              stateOfContents={stateOfContents}
+              setStateOfContents={setStateOfContents}
+              fluidGroup={fluidGroup}
+              setFluidGroup={setFluidGroup}
+              designPressure={designPressure}
+              setDesignPressure={setDesignPressure}
+              volumeOrDiameter={volumeOrDiameter}
+              setVolumeOrDiameter={setVolumeOrDiameter}
+              volumeLabel={volumeLabel}
+              volumeUnit={volumeUnit}
+              volumePlaceholder={volumePlaceholder}
+              volumeDesc={volumeDesc}
+              isFormValid={!!isFormValid}
+              onCalculate={handleCalculate}
+              onClear={handleClear}
+              hasResult={!!result}
+              onGoToResults={() => setCurrentPage(3)}
+            />
+          </div>
+        );
+      case 2:
+        return (
+          <div className="h-full overflow-y-auto hide-scrollbar bg-white">
+            <GraphsPage
+              currentIndex={currentGraphIndex}
+              setCurrentIndex={setCurrentGraphIndex}
+            />
+          </div>
+        );
+      case 3:
+        return (
+          <ResultsPage result={result} onBack={() => setCurrentPage(1)} />
+        );
+      default:
+        return null;
+    }
+  };
 
   return (
     <div className="h-screen w-screen overflow-hidden bg-gray-100 flex flex-col">
@@ -143,79 +152,32 @@ export default function Home() {
         </button>
       </header>
 
-      {/* Page container */}
-      <div
-        className="flex-1 overflow-hidden relative"
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
-        onMouseDown={handleMouseDown}
-        onMouseUp={handleMouseUp}
-      >
-        {currentPage === 3 ? (
-          // Results page
-          <ResultsPage result={result} onBack={() => setCurrentPage(1)} />
-        ) : (
-          <div
-            className="h-full page-transition"
-            style={{
-              display: 'flex',
-              transform: `translateX(-${currentPage * (100 / 3)}%)`,
-              width: '300%',
-            }}
-          >
-            {/* Page 0: Tables */}
-            <div className="h-full flex-shrink-0 overflow-y-auto custom-scrollbar" style={{ backgroundColor: '#111827', width: '33.3333%' }}>
-              <TablesPage />
-            </div>
-
-            {/* Page 1: Home / Input */}
-            <div className="h-full flex-shrink-0 overflow-y-auto hide-scrollbar bg-gray-100" style={{ width: '33.3333%' }}>
-              <InputPage
-                equipmentType={equipmentType}
-                setEquipmentType={setEquipmentType}
-                stateOfContents={stateOfContents}
-                setStateOfContents={setStateOfContents}
-                fluidGroup={fluidGroup}
-                setFluidGroup={setFluidGroup}
-                designPressure={designPressure}
-                setDesignPressure={setDesignPressure}
-                volumeOrDiameter={volumeOrDiameter}
-                setVolumeOrDiameter={setVolumeOrDiameter}
-                volumeLabel={volumeLabel}
-                volumeUnit={volumeUnit}
-                volumePlaceholder={volumePlaceholder}
-                volumeDesc={volumeDesc}
-                isFormValid={!!isFormValid}
-                onCalculate={handleCalculate}
-                onClear={handleClear}
-              />
-            </div>
-
-            {/* Page 2: Graphs */}
-            <div className="h-full flex-shrink-0 overflow-y-auto hide-scrollbar bg-white" style={{ width: '33.3333%' }}>
-              <GraphsPage
-                currentIndex={currentGraphIndex}
-                setCurrentIndex={setCurrentGraphIndex}
-              />
-            </div>
-          </div>
-        )}
+      {/* Page content - direct render, no carousel */}
+      <div className="flex-1 overflow-hidden">
+        {renderPage()}
       </div>
 
-      {/* Footer with page indicators */}
-      {currentPage !== 3 && (
-        <footer className="flex-shrink-0 flex justify-center items-center py-2 gap-2" style={{ backgroundColor: '#0F0F0F' }}>
-          {[0, 1, 2].map(i => (
-            <button
-              key={i}
-              onClick={() => setCurrentPage(i)}
-              className="w-2 h-2 rounded-full transition-colors"
-              style={{ backgroundColor: currentPage === i ? '#00C2FF' : '#6b7280' }}
-            />
-          ))}
-        </footer>
-      )}
+      {/* Bottom Navigation Bar */}
+      <nav className="flex-shrink-0 flex items-center justify-around py-1.5 border-t border-gray-800" style={{ backgroundColor: '#0F0F0F' }}>
+        {[
+          { page: 1, icon: HomeIcon, label: 'Home' },
+          { page: 3, icon: ClipboardList, label: 'Results' },
+          { page: 2, icon: BarChart3, label: 'Graphs' },
+          { page: 0, icon: FileText, label: 'Tables' },
+        ].map(({ page, icon: Icon, label }) => (
+          <button
+            key={label}
+            onClick={() => setCurrentPage(page)}
+            className="flex flex-col items-center gap-0.5 px-3 py-1 rounded-lg transition-colors min-w-[60px]"
+            style={{
+              color: currentPage === page ? '#00C2FF' : '#6b7280',
+            }}
+          >
+            <Icon size={20} />
+            <span className="text-[10px] font-medium">{label}</span>
+          </button>
+        ))}
+      </nav>
     </div>
   );
 }
@@ -225,7 +187,7 @@ export default function Home() {
 // ============================
 function TablesPage() {
   return (
-    <div className="max-w-4xl mx-auto p-4 pb-8 space-y-6">
+    <div className="max-w-4xl mx-auto p-4 pb-24 space-y-6">
       {/* Header */}
       <div className="rounded-xl overflow-hidden" style={{ backgroundColor: '#374151', borderColor: '#4b5563' }}>
         <div className="p-4 flex items-center gap-3" style={{ borderBottom: '1px solid #4b5563' }}>
@@ -331,19 +293,42 @@ function TablesPage() {
             </tbody>
           </table>
         </div>
+        <div className="px-4 pb-4 space-y-1">
+          <p className="text-gray-300 text-xs font-semibold mt-2">Module Definitions:</p>
+          <p className="text-gray-400 text-xs"><strong className="text-gray-300">A</strong> = internal production control</p>
+          <p className="text-gray-400 text-xs"><strong className="text-gray-300">A2</strong> = internal production control plus supervised pressure equipment checks at random intervals</p>
+          <p className="text-gray-400 text-xs"><strong className="text-gray-300">B</strong> = type examination — production type or type examination — design type</p>
+          <p className="text-gray-400 text-xs"><strong className="text-gray-300">C2</strong> = conformity to type based on internal production control plus supervised pressure equipment checks at random intervals</p>
+          <p className="text-gray-400 text-xs"><strong className="text-gray-300">D</strong> = conformity to type based on quality assurance of the production process</p>
+          <p className="text-gray-400 text-xs"><strong className="text-gray-300">D1</strong> = quality assurance of the production process</p>
+          <p className="text-gray-400 text-xs"><strong className="text-gray-300">E</strong> = conformity to type based on pressure equipment quality assurance</p>
+          <p className="text-gray-400 text-xs"><strong className="text-gray-300">E1</strong> = product quality assurance for final pressure equipment inspection and testing</p>
+          <p className="text-gray-400 text-xs"><strong className="text-gray-300">F</strong> = conformity to type based on pressure equipment verification</p>
+          <p className="text-gray-400 text-xs"><strong className="text-gray-300">G</strong> = conformity based on unit verification</p>
+          <p className="text-gray-400 text-xs"><strong className="text-gray-300">H</strong> = conformity based on full quality assurance</p>
+          <p className="text-gray-400 text-xs"><strong className="text-gray-300">H1</strong> = conformity based on full quality assurance plus design examination</p>
+          <div className="mt-2 space-y-1">
+            <p className="text-gray-400 text-xs"><strong className="text-gray-300">NOTE 1:</strong> For RSA/CI/OHSA marked pressure equipment intended for non-nuclear use, refer to annex B.</p>
+            <p className="text-gray-400 text-xs"><strong className="text-gray-300">NOTE 2:</strong> For RSA/CI/OHSA marked pressure equipment intended for nuclear use, refer to annex C.</p>
+            <p className="text-gray-400 text-xs"><strong className="text-gray-300">NOTE 3:</strong> For non-RSA/CI/OHSA marked pressure equipment intended for nuclear use, refer to annex C.</p>
+          </div>
+        </div>
       </div>
 
       {/* Table 3 */}
       <div className="rounded-xl overflow-hidden shadow-2xl" style={{ backgroundColor: '#374151', border: '1px solid #4b5563' }}>
         <div className="p-4" style={{ backgroundColor: '#4b5563' }}>
-          <h2 className="text-white font-bold text-lg">Table 3 — Conformity Modules for Transportable Gas Containers</h2>
+          <h2 className="text-white font-bold text-lg">Table 3 — Conformity Assessment Modules for Transportable Gas Containers</h2>
+        </div>
+        <div className="px-4 pt-3 pb-1">
+          <p className="text-gray-300 text-xs">National legislation requires that all pressure equipment, including transportable gas containers, shall be categorized in accordance with this standard. Transportable gas containers manufactured in accordance with a relevant health and safety standard shall be deemed to comply with the categorization requirements of this standard.</p>
         </div>
         <div className="overflow-x-auto p-4">
           <table className="w-full text-sm">
             <thead>
               <tr style={{ borderBottom: '1px solid #4b5563' }}>
                 <th className="text-left p-3 text-gray-300 font-semibold">Hazard Category</th>
-                <th className="text-center p-3 text-white font-semibold">Conformity Assessment Modules</th>
+                <th className="text-center p-3 text-white font-semibold">Conformity Assessment Modules<sup className="text-gray-400"> a and b</sup></th>
               </tr>
             </thead>
             <tbody>
@@ -358,6 +343,10 @@ function TablesPage() {
           <p className="text-gray-400 text-xs"><strong className="text-gray-300">NOTE:</strong> Table 3 covers test pressures 0 kPa to 300 000 kPa and volume 0,5 L to 3 000 L (water capacity).</p>
           <p className="text-gray-400 text-xs"><strong className="text-gray-300">B</strong> = type examination — design type</p>
           <p className="text-gray-400 text-xs"><strong className="text-gray-300">F</strong> = conformity to type based on pressure equipment verification</p>
+          <div className="mt-2 space-y-1">
+            <p className="text-gray-400 text-xs"><strong className="text-gray-300"><sup>a</sup></strong> Imported transportable gas containers from the European Union shall comply with the Transportable Pressure Equipment Directive (TPED) 2010/35/EU requirements.</p>
+            <p className="text-gray-400 text-xs"><strong className="text-gray-300"><sup>b</sup></strong> Imported transportable gas containers from the United Kingdom shall bear the Rho (&#x3C0;) symbol and the UKCA mark in accordance with the UK Carriage of Dangerous Goods and Use of Transportable Pressure Equipment Regulations 2009.</p>
+          </div>
         </div>
       </div>
     </div>
@@ -385,6 +374,8 @@ interface InputPageProps {
   isFormValid: boolean;
   onCalculate: () => void;
   onClear: () => void;
+  hasResult: boolean;
+  onGoToResults: () => void;
 }
 
 function InputPage({
@@ -395,9 +386,10 @@ function InputPage({
   volumeOrDiameter, setVolumeOrDiameter,
   volumeLabel, volumeUnit, volumePlaceholder, volumeDesc,
   isFormValid, onCalculate, onClear,
+  hasResult, onGoToResults,
 }: InputPageProps) {
   return (
-    <div className="max-w-2xl mx-auto p-4 pb-8 space-y-4">
+    <div className="max-w-2xl mx-auto p-4 pb-24 space-y-4">
       {/* Title Block */}
       <div className="rounded-t-xl px-3 pt-4 pb-3 text-center" style={{ backgroundColor: '#353e43' }}>
         <h1 className="text-white text-2xl md:text-3xl font-bold">Pressure Equipment Categorization</h1>
@@ -466,37 +458,37 @@ function InputPage({
         </div>
       </div>
 
-      {/* Design Pressure & Volume/Diameter */}
+      {/* Design Pressure & Volume/Diameter - fixed alignment */}
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4">
         <div className="grid grid-cols-2 gap-4">
-          <div>
-            <h3 className="font-bold text-center text-black">Design Pressure</h3>
-            <p className="text-center text-gray-500 text-xs mb-2">Maximum allowable pressure</p>
-            <div className="relative">
+          <div className="flex flex-col">
+            <h3 className="font-bold text-center text-black text-sm sm:text-base">Design Pressure</h3>
+            <p className="text-center text-gray-500 text-xs mb-2 min-h-[2rem] flex items-center justify-center">Maximum allowable pressure</p>
+            <div className="relative mt-auto">
               <input
                 type="number"
                 value={designPressure}
                 onChange={(e) => setDesignPressure(e.target.value)}
-                placeholder="Enter pressure"
-                className="w-full h-14 rounded-xl border border-gray-200 px-4 pr-16 text-black focus:outline-none focus:border-[#00C2FF] focus:ring-2 focus:ring-[#00C2FF]/20"
+                placeholder="Enter pr..."
+                className="w-full h-12 sm:h-14 rounded-xl border border-gray-200 px-3 pr-14 text-sm text-black focus:outline-none focus:border-[#00C2FF] focus:ring-2 focus:ring-[#00C2FF]/20"
               />
-              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-white text-xs font-bold px-2.5 py-1 rounded-full" style={{ backgroundColor: '#00C2FF' }}>
+              <span className="absolute right-2 top-1/2 -translate-y-1/2 text-white text-xs font-bold px-2 py-0.5 rounded-full" style={{ backgroundColor: '#00C2FF' }}>
                 kPa
               </span>
             </div>
           </div>
-          <div>
-            <h3 className="font-bold text-center text-black">{volumeLabel}</h3>
-            <p className="text-center text-gray-500 text-xs mb-2">{volumeDesc}</p>
-            <div className="relative">
+          <div className="flex flex-col">
+            <h3 className="font-bold text-center text-black text-sm sm:text-base">{volumeLabel}</h3>
+            <p className="text-center text-gray-500 text-xs mb-2 min-h-[2rem] flex items-center justify-center">{volumeDesc}</p>
+            <div className="relative mt-auto">
               <input
                 type="number"
                 value={volumeOrDiameter}
                 onChange={(e) => setVolumeOrDiameter(e.target.value)}
-                placeholder={volumePlaceholder}
-                className="w-full h-14 rounded-xl border border-gray-200 px-4 pr-16 text-black focus:outline-none focus:border-[#00C2FF] focus:ring-2 focus:ring-[#00C2FF]/20"
+                placeholder="Enter vol..."
+                className="w-full h-12 sm:h-14 rounded-xl border border-gray-200 px-3 pr-14 text-sm text-black focus:outline-none focus:border-[#00C2FF] focus:ring-2 focus:ring-[#00C2FF]/20"
               />
-              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-white text-xs font-bold px-2.5 py-1 rounded-full" style={{ backgroundColor: '#00C2FF' }}>
+              <span className="absolute right-2 top-1/2 -translate-y-1/2 text-white text-xs font-bold px-2 py-0.5 rounded-full" style={{ backgroundColor: '#00C2FF' }}>
                 {volumeUnit}
               </span>
             </div>
@@ -528,6 +520,21 @@ function InputPage({
         <RefreshCw size={16} style={{ color: '#00C2FF' }} />
         <span style={{ color: '#00C2FF' }}>Clear All</span>{' '}
         <span>Fields</span>
+      </button>
+
+      {/* Results Button */}
+      <button
+        onClick={onGoToResults}
+        disabled={!hasResult}
+        className="w-full h-12 rounded-xl flex items-center justify-center gap-2 text-sm font-bold transition-all"
+        style={{
+          backgroundColor: hasResult ? '#10b981' : '#e5e7eb',
+          color: hasResult ? '#ffffff' : '#9ca3af',
+          cursor: hasResult ? 'pointer' : 'not-allowed',
+        }}
+      >
+        <ClipboardList size={18} />
+        View Results
       </button>
 
       {/* Footer Info */}
@@ -572,7 +579,7 @@ function GraphsPage({ currentIndex, setCurrentIndex }: {
   const graph = allGraphs[currentIndex];
 
   return (
-    <div className="max-w-4xl mx-auto p-4 pb-8 space-y-4">
+    <div className="max-w-4xl mx-auto p-4 pb-24 space-y-4">
       {/* Graph Header */}
       <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
         <div className="flex justify-between items-start">
@@ -587,9 +594,11 @@ function GraphsPage({ currentIndex, setCurrentIndex }: {
         </div>
       </div>
 
-      {/* Graph */}
-      <div className="bg-white rounded-xl border border-gray-200 p-2 flex justify-center">
-        <SANSGraph config={graph} width={750} height={520} />
+      {/* Graph - responsive container */}
+      <div className="bg-white rounded-xl border border-gray-200 p-2">
+        <div className="w-full responsive-graph-container">
+          <SANSGraph config={graph} width={750} height={520} />
+        </div>
       </div>
 
       {/* Application text */}
@@ -623,8 +632,8 @@ function GraphsPage({ currentIndex, setCurrentIndex }: {
         </button>
       </div>
 
-      {/* Thumbnail Grid */}
-      <div className="grid grid-cols-9 gap-2">
+      {/* Thumbnail Grid - responsive for mobile */}
+      <div className="grid grid-cols-5 sm:grid-cols-9 gap-2">
         {allGraphs.map((g, i) => (
           <button
             key={g.id}
@@ -682,6 +691,8 @@ function ResultsPage({ result, onBack }: {
   } | null;
   onBack: () => void;
 }) {
+  const [showResultCard, setShowResultCard] = useState(true);
+
   if (!result) return null;
 
   const graph = allGraphs.find(g => g.id === result.figureId);
@@ -697,7 +708,7 @@ function ResultsPage({ result, onBack }: {
 
   return (
     <div className="h-full overflow-y-auto hide-scrollbar bg-white">
-      <div className="max-w-4xl mx-auto p-4 pb-8 space-y-4">
+      <div className="max-w-4xl mx-auto p-4 pb-24 space-y-4">
         {/* Results Header */}
         <div className="bg-gray-50 rounded-xl p-4 flex items-center justify-between border border-gray-200">
           <div className="flex items-center gap-2">
@@ -748,40 +759,65 @@ function ResultsPage({ result, onBack }: {
           </div>
 
           <div className="relative">
-            <SANSGraph
-              config={graph}
-              plotPoint={{
-                x: result.vOrDn,
-                y: result.ps,
-                category: result.category,
-                color: catColor,
-              }}
-              width={750}
-              height={520}
-            />
-
-            {/* Floating result card */}
-            <div className="absolute top-4 right-4 bg-white rounded-xl shadow-lg border-2 p-3 max-w-[200px]" style={{ borderColor: '#00C2FF' }}>
-              <div className="flex items-center gap-2 mb-2">
-                <div className="w-3 h-3 rounded-full" style={{ backgroundColor: catColor }} />
-                <span className="font-bold text-sm text-black">Your Result</span>
-              </div>
-              <p className="text-xs text-gray-600 mb-2">{productLabel}</p>
-              <div className="flex items-center justify-center">
-                <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ backgroundColor: catColor }}>
-                  <span className="text-white font-bold" style={{
-                    fontSize: result.category.length <= 3 ? '0.875rem' : '0.55rem',
-                    lineHeight: 1.2,
-                    textAlign: 'center',
-                  }}>
-                    {result.category}
-                  </span>
-                </div>
-              </div>
-              <p className="text-center text-xs text-gray-500 mt-1">
-                {result.category === 'Not regulated' ? 'Not Regulated' : `Category ${result.category}`}
-              </p>
+            <div className="w-full responsive-graph-container">
+              <SANSGraph
+                config={graph}
+                plotPoint={{
+                  x: result.vOrDn,
+                  y: result.ps,
+                  category: result.category,
+                  color: catColor,
+                }}
+                width={750}
+                height={520}
+              />
             </div>
+
+            {/* Toggleable floating result card */}
+            <button
+              onClick={() => setShowResultCard(!showResultCard)}
+              className="absolute top-2 right-2 bg-white rounded-xl shadow-lg border-2 transition-all cursor-pointer select-none"
+              style={{
+                borderColor: '#00C2FF',
+                padding: showResultCard ? '0.75rem' : '0.5rem',
+                maxWidth: showResultCard ? '200px' : 'auto',
+              }}
+            >
+              {showResultCard ? (
+                <>
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: catColor }} />
+                    <span className="font-bold text-sm text-black">Your Result</span>
+                  </div>
+                  <p className="text-xs text-gray-600 mb-2 text-left">{productLabel}</p>
+                  <div className="flex items-center justify-center">
+                    <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ backgroundColor: catColor }}>
+                      <span className="text-white font-bold" style={{
+                        fontSize: result.category.length <= 3 ? '0.875rem' : '0.55rem',
+                        lineHeight: 1.2,
+                        textAlign: 'center',
+                      }}>
+                        {result.category}
+                      </span>
+                    </div>
+                  </div>
+                  <p className="text-center text-xs text-gray-500 mt-1">
+                    {result.category === 'Not regulated' ? 'Not Regulated' : `Category ${result.category}`}
+                  </p>
+                </>
+              ) : (
+                <div className="flex items-center gap-1.5">
+                  <div className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0" style={{ backgroundColor: catColor }}>
+                    <span className="text-white font-bold" style={{
+                      fontSize: result.category.length <= 3 ? '0.6rem' : '0.4rem',
+                    }}>
+                      {result.category}
+                    </span>
+                  </div>
+                  <span className="text-[10px] font-bold text-gray-600">Result</span>
+                </div>
+              )}
+            </button>
           </div>
 
           {/* Application text */}

@@ -70,3 +70,22 @@ input[type="number"]::-webkit-outer-spin-button {
 input[type="number"] {
   -moz-appearance: textfield;
 }
+
+/* Responsive graph container */
+.responsive-graph-container {
+  width: 100%;
+  overflow: hidden;
+  display: flex;
+  justify-content: center;
+}
+
+/* In landscape on mobile, let graph use available viewport */
+@media (orientation: landscape) and (max-height: 500px) {
+  .responsive-graph-container {
+    max-height: 70vh;
+  }
+  .responsive-graph-container canvas {
+    max-height: 70vh;
+    width: auto !important;
+  }
+}

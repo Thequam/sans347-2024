@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useRef, useEffect, useCallback } from 'react';
+import React, { useRef, useEffect, useCallback, useState } from 'react';
 import type { GraphConfig } from '@/lib/graphData';
 
 interface SANSGraphProps {
@@ -12,6 +12,23 @@ interface SANSGraphProps {
 
 export default function SANSGraph({ config, plotPoint, width = 800, height = 550 }: SANSGraphProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [renderSize, setRenderSize] = useState({ w: width, h: height });
+
+  // Measure container and compute render size preserving aspect ratio
+  useEffect(() => {
+    const measure = () => {
+      if (!containerRef.current) return;
+      const containerWidth = containerRef.current.clientWidth;
+      const aspectRatio = width / height;
+      const effectiveWidth = Math.min(containerWidth, width);
+      const effectiveHeight = effectiveWidth / aspectRatio;
+      setRenderSize({ w: effectiveWidth, h: effectiveHeight });
+    };
+    measure();
+    window.addEventListener('resize', measure);
+    return () => window.removeEventListener('resize', measure);
+  }, [width, height]);
 
   const drawGraph = useCallback(() => {
     const canvas = canvasRef.current;
@@ -19,17 +36,28 @@ export default function SANSGraph({ config, plotPoint, width = 800, height = 550
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
+    const w = renderSize.w;
+    const h = renderSize.h;
+
     const dpr = window.devicePixelRatio || 1;
-    canvas.width = width * dpr;
-    canvas.height = height * dpr;
-    canvas.style.width = `${width}px`;
-    canvas.style.height = `${height}px`;
+    canvas.width = w * dpr;
+    canvas.height = h * dpr;
+    canvas.style.width = `${w}px`;
+    canvas.style.height = `${h}px`;
     ctx.scale(dpr, dpr);
 
-    // Margins
-    const margin = { top: 20, right: 30, bottom: 60, left: 80 };
-    const plotW = width - margin.left - margin.right;
-    const plotH = height - margin.top - margin.bottom;
+    // Scale factor for font sizes and line widths relative to base 750px
+    const sf = w / 750;
+
+    // Margins - scale with render size
+    const margin = {
+      top: Math.round(20 * sf),
+      right: Math.round(30 * sf),
+      bottom: Math.round(60 * sf),
+      left: Math.round(80 * sf),
+    };
+    const plotW = w - margin.left - margin.right;
+    const plotH = h - margin.top - margin.bottom;
 
     // Log scale helpers
     const logX = (v: number) => {
@@ -45,7 +73,7 @@ export default function SANSGraph({ config, plotPoint, width = 800, height = 550
 
     // Clear
     ctx.fillStyle = '#ffffff';
-    ctx.fillRect(0, 0, width, height);
+    ctx.fillRect(0, 0, w, h);
 
     // Draw grid
     ctx.strokeStyle = '#d1d5db';
@@ -153,9 +181,9 @@ export default function SANSGraph({ config, plotPoint, width = 800, height = 550
         }
 
         ctx.fillStyle = isHorizontal || isVertical ? '#374151' : '#dc2626';
-        ctx.font = '10px Arial';
+        ctx.font = `${Math.max(8, Math.round(10 * sf))}px Arial`;
         ctx.textAlign = 'center';
-        ctx.fillText(line.label, 0, isHorizontal ? -6 : isVertical ? -6 : -6);
+        ctx.fillText(line.label, 0, isHorizontal ? -6 * sf : isVertical ? -6 * sf : -6 * sf);
         ctx.restore();
       }
     }
@@ -166,7 +194,7 @@ export default function SANSGraph({ config, plotPoint, width = 800, height = 550
       const zy = logY(zone.y);
       if (zx > margin.left && zx < margin.left + plotW && zy > margin.top && zy < margin.top + plotH) {
         ctx.fillStyle = '#6b7280';
-        ctx.font = 'bold 14px Arial';
+        ctx.font = `bold ${Math.max(10, Math.round(14 * sf))}px Arial`;
         ctx.textAlign = 'center';
         ctx.fillText(zone.label, zx, zy);
       }
@@ -174,14 +202,14 @@ export default function SANSGraph({ config, plotPoint, width = 800, height = 550
 
     // Y-axis labels
     ctx.fillStyle = '#374151';
-    ctx.font = '11px Arial';
+    ctx.font = `${Math.max(9, Math.round(11 * sf))}px Arial`;
     ctx.textAlign = 'right';
     for (let e = yMinLog; e <= yMaxLog; e++) {
       const val = Math.pow(10, e);
       if (val >= config.yMin && val <= config.yMax) {
         const py = logY(val);
         const label = val >= 1000 ? (val / 1000 >= 1000 ? `${val / 1000} ` : `${val.toLocaleString('en').replace(/,/g, ' ')}`) : val.toString().replace('.', ',');
-        ctx.fillText(label, margin.left - 8, py + 4);
+        ctx.fillText(label, margin.left - 8 * sf, py + 4);
       }
     }
 
@@ -192,18 +220,18 @@ export default function SANSGraph({ config, plotPoint, width = 800, height = 550
       if (val >= config.xMin && val <= config.xMax) {
         const px = logX(val);
         const label = val >= 1000 ? `${val.toLocaleString('en').replace(/,/g, ' ')}` : val.toString().replace('.', ',');
-        ctx.fillText(label, px, margin.top + plotH + 18);
+        ctx.fillText(label, px, margin.top + plotH + 18 * sf);
       }
     }
 
     // Axis titles
     ctx.fillStyle = '#1f2937';
-    ctx.font = 'bold 12px Arial';
+    ctx.font = `bold ${Math.max(10, Math.round(12 * sf))}px Arial`;
     ctx.textAlign = 'center';
-    ctx.fillText(config.xAxisLabel, margin.left + plotW / 2, height - 10);
+    ctx.fillText(config.xAxisLabel, margin.left + plotW / 2, h - 10 * sf);
 
     ctx.save();
-    ctx.translate(15, margin.top + plotH / 2);
+    ctx.translate(15 * sf, margin.top + plotH / 2);
     ctx.rotate(-Math.PI / 2);
     ctx.fillText(config.yAxisLabel, 0, 0);
     ctx.restore();
@@ -233,7 +261,7 @@ export default function SANSGraph({ config, plotPoint, width = 800, height = 550
 
         // Point dot
         ctx.beginPath();
-        ctx.arc(px, py, 8, 0, Math.PI * 2);
+        ctx.arc(px, py, Math.max(5, 8 * sf), 0, Math.PI * 2);
         ctx.fillStyle = plotPoint.color || '#f97316';
         ctx.fill();
         ctx.strokeStyle = '#ffffff';
@@ -242,20 +270,20 @@ export default function SANSGraph({ config, plotPoint, width = 800, height = 550
 
         // Label "Your Equipment"
         ctx.fillStyle = plotPoint.color || '#f97316';
-        const labelBgX = px + 12;
-        const labelBgY = py - 12;
+        const labelBgX = px + 12 * sf;
+        const labelBgY = py - 12 * sf;
         const labelText = 'Your Equipment';
-        ctx.font = 'bold 11px Arial';
+        ctx.font = `bold ${Math.max(9, Math.round(11 * sf))}px Arial`;
         const textWidth = ctx.measureText(labelText).width;
 
         // Background pill
-        const pillPad = 6;
+        const pillPad = 6 * sf;
         ctx.beginPath();
         const rx = labelBgX - pillPad;
-        const ry = labelBgY - 12;
+        const ry = labelBgY - 12 * sf;
         const rw = textWidth + pillPad * 2;
-        const rh = 20;
-        const radius = 4;
+        const rh = 20 * sf;
+        const radius = 4 * sf;
         ctx.moveTo(rx + radius, ry);
         ctx.lineTo(rx + rw - radius, ry);
         ctx.quadraticCurveTo(rx + rw, ry, rx + rw, ry + radius);
@@ -273,19 +301,18 @@ export default function SANSGraph({ config, plotPoint, width = 800, height = 550
         ctx.fillText(labelText, labelBgX, labelBgY + 2);
       }
     }
-  }, [config, plotPoint, width, height]);
+  }, [config, plotPoint, renderSize]);
 
   useEffect(() => {
     drawGraph();
-    const handleResize = () => drawGraph();
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
   }, [drawGraph]);
 
   return (
-    <canvas
-      ref={canvasRef}
-      style={{ width: '100%', height: 'auto', maxWidth: `${width}px` }}
-    />
+    <div ref={containerRef} style={{ width: '100%' }}>
+      <canvas
+        ref={canvasRef}
+        style={{ width: `${renderSize.w}px`, height: `${renderSize.h}px`, display: 'block', margin: '0 auto' }}
+      />
+    </div>
   );
 }
