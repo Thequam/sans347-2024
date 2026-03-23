@@ -128,7 +128,7 @@ export default function Home() {
   };
 
   return (
-    <div className="h-screen w-screen overflow-hidden bg-gray-100 flex flex-col">
+    <div className="w-screen h-screen overflow-hidden bg-gray-100 flex flex-col">
       {/* Header - toggleable */}
       <header className="flex-shrink-0 transition-all duration-300 overflow-hidden" style={{ backgroundColor: '#0F0F0F' }}>
         {showHeader ? (
@@ -165,12 +165,12 @@ export default function Home() {
       </header>
 
       {/* Page content - direct render, no carousel */}
-      <div className="flex-1 overflow-hidden">
+      <div className="flex-1 overflow-hidden pb-14">
         {renderPage()}
       </div>
 
-      {/* Bottom Navigation Bar */}
-      <nav className="flex-shrink-0 flex items-center justify-around py-1.5 border-t border-gray-800" style={{ backgroundColor: '#0F0F0F' }}>
+      {/* Bottom Navigation Bar - fixed to bottom */}
+      <nav className="fixed bottom-0 left-0 right-0 z-50 flex items-center justify-around py-1.5 border-t border-gray-800" style={{ backgroundColor: '#0F0F0F', paddingBottom: 'max(0.375rem, env(safe-area-inset-bottom))' }}>
         {[
           { page: 1, icon: HomeIcon, label: 'Home' },
           { page: 3, icon: ClipboardList, label: 'Results' },
