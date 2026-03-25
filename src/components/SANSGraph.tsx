@@ -101,8 +101,8 @@ export default function SANSGraph({ config, plotPoint, width = 800, height = 550
           ctx.beginPath();
           ctx.moveTo(margin.left, py);
           ctx.lineTo(margin.left + plotW, py);
-          ctx.strokeStyle = '#e5e7eb';
-          ctx.lineWidth = 0.3;
+          ctx.strokeStyle = '#c8ccd2';
+          ctx.lineWidth = 0.5;
           ctx.stroke();
         }
       }
@@ -129,8 +129,8 @@ export default function SANSGraph({ config, plotPoint, width = 800, height = 550
           ctx.beginPath();
           ctx.moveTo(px, margin.top);
           ctx.lineTo(px, margin.top + plotH);
-          ctx.strokeStyle = '#e5e7eb';
-          ctx.lineWidth = 0.3;
+          ctx.strokeStyle = '#c8ccd2';
+          ctx.lineWidth = 0.5;
           ctx.stroke();
         }
       }
@@ -163,12 +163,13 @@ export default function SANSGraph({ config, plotPoint, width = 800, height = 550
 
       // Draw label
       if (line.label) {
-        const midX = (x1p + x2p) / 2;
-        const midY = (y1p + y2p) / 2;
+        // Use custom label coordinates if provided, otherwise midpoint
+        const labelPosX = line.labelX != null ? logX(line.labelX) : (x1p + x2p) / 2;
+        const labelPosY = line.labelY != null ? logY(line.labelY) : (y1p + y2p) / 2;
         const angle = Math.atan2(y2p - y1p, x2p - x1p);
 
         ctx.save();
-        ctx.translate(midX, midY);
+        ctx.translate(labelPosX, labelPosY);
 
         // Only rotate for diagonal lines
         const isHorizontal = Math.abs(line.y1 - line.y2) < 0.01 * Math.max(line.y1, line.y2);
@@ -183,7 +184,9 @@ export default function SANSGraph({ config, plotPoint, width = 800, height = 550
         ctx.fillStyle = isHorizontal || isVertical ? '#374151' : '#dc2626';
         ctx.font = `${Math.max(8, Math.round(10 * sf))}px Arial`;
         ctx.textAlign = 'center';
-        ctx.fillText(line.label, 0, isHorizontal ? -6 * sf : isVertical ? -6 * sf : -6 * sf);
+        const baseOffset = -6 * sf;
+        const extraOffset = line.labelOffset ? line.labelOffset * sf : 0;
+        ctx.fillText(line.label, 0, baseOffset + extraOffset);
         ctx.restore();
       }
     }

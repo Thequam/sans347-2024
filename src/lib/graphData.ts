@@ -9,6 +9,9 @@ export interface LineSegment {
   y2: number;
   label?: string;
   labelPosition?: 'start' | 'middle' | 'end';
+  labelOffset?: number; // perpendicular offset in pixels (negative = above line)
+  labelX?: number; // custom label X coordinate (in data space)
+  labelY?: number; // custom label Y coordinate (in data space)
   color?: string;
 }
 
@@ -71,10 +74,10 @@ const figure1: GraphConfig = {
   categoryZones: [
     { label: 'SEP', x: 0.3, y: 300 },
     { label: 'Not regulated', x: 30, y: 5 },
-    { label: 'I', x: 30, y: 55 },
-    { label: 'II', x: 200, y: 55 },
-    { label: 'III', x: 2000, y: 55 },
-    { label: 'IV', x: 2000, y: 30000 },
+    { label: 'I', x: 10, y: 300 },
+    { label: 'II', x: 50, y: 200 },
+    { label: 'III', x: 500, y: 100 },
+    { label: 'IV', x: 3000, y: 30000 },
   ],
   footerText: 'Figure 1 — Graph for vessels — Dangerous gas',
   applicationText: 'Vessels that fall within categories I or II and that are intended to contain an unstable gas, shall be classified as category III (see figure 1).',
@@ -117,10 +120,10 @@ const figure2: GraphConfig = {
   categoryZones: [
     { label: 'SEP', x: 0.3, y: 300 },
     { label: 'Not regulated', x: 30, y: 5 },
-    { label: 'I', x: 30, y: 55 },
-    { label: 'II', x: 200, y: 55 },
-    { label: 'III', x: 2000, y: 55 },
-    { label: 'IV', x: 2000, y: 30000 },
+    { label: 'I', x: 50, y: 200 },
+    { label: 'II', x: 200, y: 200 },
+    { label: 'III', x: 1000, y: 200 },
+    { label: 'IV', x: 3000, y: 30000 },
   ],
   footerText: 'Figure 2 — Graph for vessels — Nondangerous gas',
   applicationText: 'Portable fire extinguishers up to 3 000 kPa shall be classified as at least category III (see figure 2).',
@@ -156,8 +159,9 @@ const figure3: GraphConfig = {
     { label: 'SEP', x: 0.3, y: 300 },
     { label: 'Not regulated', x: 30, y: 5 },
     { label: 'I', x: 500, y: 100 },
+    { label: 'II', x: 0.3, y: 100000 },
     { label: 'II', x: 500, y: 5000 },
-    { label: 'III', x: 3000, y: 50000 },
+    { label: 'III', x: 3000, y: 150000 },
   ],
   footerText: 'Figure 3 — Graph for vessels — Dangerous liquids',
   applicationText: 'Figure 3 shows the various categories for dangerous liquids contained in vessels.',
@@ -194,9 +198,10 @@ const figure4: GraphConfig = {
   categoryZones: [
     { label: 'SEP', x: 0.3, y: 300 },
     { label: 'Not regulated', x: 30, y: 5 },
-    { label: 'I', x: 5000, y: 100 },
+    { label: 'I', x: 2, y: 200000 },
+    { label: 'I', x: 5000, y: 300 },
     { label: 'II', x: 5000, y: 5000 },
-    { label: 'III', x: 50000, y: 50000 },
+    { label: 'III', x: 50000, y: 150000 },
   ],
   footerText: 'Figure 4 — Graph for vessels — Nondangerous liquids',
   applicationText: 'Assemblies intended for generating warm water shall be subjected to a type approval. See table 2 category 3 for warm water.',
@@ -233,12 +238,11 @@ const figure5: GraphConfig = {
     { x1: 1000, y1: 50, x2: 1000, y2: 300, label: 'V = 1 000', color: '#dc2626' },
   ],
   categoryZones: [
-    { label: 'SEP', x: 0.3, y: 300 },
     { label: 'Not regulated', x: 30, y: 5 },
-    { label: 'I', x: 20, y: 55 },
-    { label: 'II', x: 100, y: 55 },
-    { label: 'III', x: 300, y: 200 },
-    { label: 'IV', x: 200, y: 10000 },
+    { label: 'I', x: 0.5, y: 1000 },
+    { label: 'II', x: 50, y: 150 },
+    { label: 'III', x: 200, y: 500 },
+    { label: 'IV', x: 500, y: 15000 },
   ],
   footerText: 'Figure 5 — Graph for steam generators',
   applicationText: 'The design of jacketed pressure cookers shall be subjected to a conformity assessment procedure equivalent to at least one of the category III modules (see figure 5).',
@@ -277,9 +281,9 @@ const figure6: GraphConfig = {
   categoryZones: [
     { label: 'SEP', x: 5, y: 300 },
     { label: 'Not regulated', x: 50, y: 5 },
-    { label: 'I', x: 60, y: 100 },
-    { label: 'II', x: 200, y: 100 },
-    { label: 'III', x: 500, y: 5000 },
+    { label: 'I', x: 50, y: 200 },
+    { label: 'II', x: 200, y: 300 },
+    { label: 'III', x: 700, y: 10000 },
   ],
   footerText: 'Figure 6 — Graph for piping — Dangerous gas',
   applicationText: 'Piping that is intended for unstable gases that fall within categories I or II shall be classified as category III (see figure 6).',
@@ -307,7 +311,7 @@ const figure7: GraphConfig = {
     // DN = 32 vertical (red)
     { x1: 32, y1: 3125, x2: 32, y2: 200000, label: 'DN = 32', color: '#dc2626' },
     // PS*DN = 350,000 diagonal
-    { x1: 100, y1: 3500, x2: 7000, y2: 50, label: 'PS×DN = 350 000', color: '#dc2626' },
+    { x1: 100, y1: 3500, x2: 7000, y2: 50, label: 'PS×DN = 350 000', labelX: 2000, labelY: 85, color: '#dc2626' },
     // DN = 100 vertical
     { x1: 100, y1: 3500, x2: 100, y2: 200000, label: 'DN = 100', color: '#dc2626' },
     // PS*DN = 100,000 diagonal
@@ -318,9 +322,9 @@ const figure7: GraphConfig = {
   categoryZones: [
     { label: 'SEP', x: 5, y: 300 },
     { label: 'Not regulated', x: 50, y: 5 },
-    { label: 'I', x: 60, y: 100 },
-    { label: 'II', x: 500, y: 100 },
-    { label: 'III', x: 5000, y: 5000 },
+    { label: 'I', x: 500, y: 300 },
+    { label: 'II', x: 150, y: 2800 },
+    { label: 'III', x: 1000, y: 5000 },
   ],
   footerText: 'Figure 7 — Graph for piping — Nondangerous gas',
   applicationText: 'All piping that contains fluids at a temperature greater than 350 °C (not applicable to nonmetallic piping) and that falls into category II shall be classified as category III (see figure 7).',
@@ -357,9 +361,9 @@ const figure8: GraphConfig = {
   categoryZones: [
     { label: 'SEP', x: 5, y: 300 },
     { label: 'Not regulated', x: 50, y: 5 },
-    { label: 'I', x: 500, y: 200 },
+    { label: 'I', x: 700, y: 300 },
     { label: 'II', x: 500, y: 5000 },
-    { label: 'III', x: 3000, y: 50000 },
+    { label: 'III', x: 3000, y: 100000 },
   ],
   footerText: 'Figure 8 — Graph for piping — Dangerous liquids',
   applicationText: 'Figure 8 shows the various categories for dangerous liquids contained in piping.',
@@ -394,9 +398,8 @@ const figure9: GraphConfig = {
   categoryZones: [
     { label: 'SEP', x: 5, y: 300 },
     { label: 'Not regulated', x: 30, y: 5 },
-    { label: 'I', x: 500, y: 200 },
-    { label: 'II', x: 1000, y: 5000 },
-    { label: 'III', x: 3000, y: 50000 },
+    { label: 'I', x: 1000, y: 5000 },
+    { label: 'II', x: 1000, y: 100000 },
   ],
   footerText: 'Figure 9 — Graph for piping — Nondangerous liquids',
   applicationText: 'Figure 9 shows the various categories for nondangerous liquids contained in piping.',
